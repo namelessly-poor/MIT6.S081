@@ -44,6 +44,30 @@ procinit(void)
   kvminithart();
 }
 
+// Return the number of processes whose state is not UNUSED
+uint64
+nproc(void)
+{
+  struct proc *p;
+  // counting the number of processes
+  uint64 num = 0;
+  // traverse all processes
+  for (p = proc; p < &proc[NPROC]; p++)
+  {
+    // add lock
+    acquire(&p->lock);
+    // if the processes's state is not UNUSED
+    if (p->state != UNUSED)
+    {
+      // the num add one
+      num++;
+    }
+    // release lock
+    release(&p->lock);
+  }
+  return num;
+}
+
 // Must be called with interrupts disabled,
 // to prevent race with process being moved
 // to a different CPU.
@@ -81,7 +105,6 @@ allocpid() {
   pid = nextpid;
   nextpid = nextpid + 1;
   release(&pid_lock);
-
   return pid;
 }
 
@@ -126,7 +149,7 @@ found:
   memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
-
+  p->tracemask = 0;
   return p;
 }
 
@@ -266,20 +289,22 @@ fork(void)
   if((np = allocproc()) == 0){
     return -1;
   }
-
+  
   // Copy user memory from parent to child.
   if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
     freeproc(np);
     release(&np->lock);
     return -1;
   }
+
+  
   np->sz = p->sz;
 
   np->parent = p;
 
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
-
+  np->tracemask = p->tracemask;
   // Cause fork to return 0 in the child.
   np->trapframe->a0 = 0;
 
