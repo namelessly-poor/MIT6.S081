@@ -160,13 +160,22 @@ int             uartgetc(void);
 // vm.c
 void            kvminit(void);
 void            kvminithart(void);
-uint64          kvmpa(uint64);
+uint64          kvmpa(pagetable_t, uint64);
 void            kvmmap(uint64, uint64, uint64, int);
 int             mappages(pagetable_t, uint64, uint64, uint64, int);
 pagetable_t     uvmcreate(void);
 void            uvminit(pagetable_t, uchar *, uint);
 uint64          uvmalloc(pagetable_t, uint64, uint64);
 uint64          uvmdealloc(pagetable_t, uint64, uint64);
+
+void            vmprint(pagetable_t); // 新增
+void            vminit(pagetable_t); // 把原先 kvminit() 初始化内容搬过来，并增加页表作为入参，可以为任一页表映射原内核映射的内容
+int             vmmap(pagetable_t, uint64, uint64, uint64, int); // 虚拟和物理内存映射，参考 vmmap() ，入参增加了根页表
+pagetable_t     createukpgtbl(); // 新增函数，全称 create user kernel page table，创建用户进程的内核页表
+void            freeukpgtbl(pagetable_t); // 新增函数，用来释放用户内核页表
+void            change_allkp(); //将satp寄存去的页表切换成全局内核页表
+int             u2kvmcopy(pagetable_t, pagetable_t, uint64, uint64); // 新增函数，用于将用户空间的页表内容复制到用户内核页表
+
 #ifdef SOL_COW
 #else
 int             uvmcopy(pagetable_t, pagetable_t, uint64);
@@ -189,6 +198,11 @@ void            plic_complete(int);
 void            virtio_disk_init(void);
 void            virtio_disk_rw(struct buf *, int);
 void            virtio_disk_intr(void);
+
+// vmcopyin.c 
+int             copyin_new(pagetable_t, char *, uint64, uint64); // 新增两个函数声明
+int             copyinstr_new(pagetable_t, char *, uint64, uint64);
+
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
