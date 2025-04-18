@@ -55,6 +55,10 @@
 // each surrounded by invalid guard pages.
 #define KSTACK(p) (TRAMPOLINE - ((p)+1)* 2*PGSIZE)
 
+// the minimum address the mmap can ues - lab10
+#define MMAPMINADDR (TRAPFRAME - 10 * PGSIZE)
+
+
 // User memory layout.
 // Address zero first:
 //   text
